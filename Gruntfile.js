@@ -24,6 +24,7 @@ module.exports = function (grunt) {
       "jasmine": "vendor/jasmine/lib/jasmine-core/jasmine",
       "jasmine-html": "vendor/jasmine/lib/jasmine-core/jasmine-html",
       "easytab": "vendor/easytabs/lib/jquery.easytabs",
+      "marionette": "vendor/backbone.marionette/lib/backbone.marionette",
       "app": "app"
     },
     shim: {
