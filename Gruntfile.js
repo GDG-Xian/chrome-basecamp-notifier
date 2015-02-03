@@ -13,7 +13,7 @@ module.exports = function (grunt) {
     name: "main",
     baseUrl: "./src/js",
     out: "dist/js/main.js",
-    generateSourceMaps: true,
+    // generateSourceMaps: true,
     preserveLicenseComments: false,
     optimize: "none",
     paths: {
@@ -21,22 +21,17 @@ module.exports = function (grunt) {
       "underscore": "vendor/underscore-amd/underscore",
       "backbone": "vendor/backbone-amd/backbone",
       "text": "vendor/text/text",
-      "jasmine": "vendor/jasmine/lib/jasmine-core/jasmine",
-      "jasmine-html": "vendor/jasmine/lib/jasmine-core/jasmine-html",
       "easytab": "vendor/easytabs/lib/jquery.easytabs",
       "marionette": "vendor/backbone.marionette/lib/backbone.marionette",
+      "hbs": "vendor/require-handlebars-plugin/hbs",
+      "backbone.dualstorage": "vendor/backbone.dualStorage/backbone.dualstorage.amd",
+      "backbone.computed-properties": "vendor/backbone-computed-properties/src/backbone-computed",
+      "backbone.offline-attributes": "vendor/backbone.offline-attributes/src/backbone.offline_attributes",
       "app": "app"
     },
     shim: {
       "easytab": {
         deps: ["jquery"]
-      },
-      "jasmine": {
-        exports: "jasmine",
-      },
-      "jasmine-html": {
-        deps: ["jasmine", "jquery"],
-        exports: "jasmine"
       }
     }
   });

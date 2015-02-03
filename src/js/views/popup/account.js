@@ -1,56 +1,73 @@
 define([
-  "text!templates/popup/account.html",
-  "collections/events",
+  "hbs!views/popup/templates/account",
   "views/popup/events",
-  "easytab",
-  "backbone"
-], function(
-  AccountTpl,
-  Events,
-  EventsView) {
-  return Backbone.View.extend({
-    template: _.template(AccountTpl),
+  "models/user_token",
+  "collections/events",
+  "collections/starred_events",
+  "marionette"
+], function(AccountTpl, EventsView, UserToken, Events, StarredEvents, Marionette) {
+  return Marionette.LayoutView.extend({
+    template: AccountTpl,
 
     className: "account",
 
-    initialize: function () {
-      this.starredEvents = this.model.getStarredEvents();
-      this.latestEvents = this.model.getEvents();
-
-      this.latestEventsView = new EventsView({ collection: this.latestEvents, parentView: this });
-      this.starredEventsView = new EventsView({ collection: this.starredEvents, parentView: this });
-
-      this.on("star-item", function (eventItem) {
-        this.starredEvents.addEvent(eventItem);
-      }, this);
-
-      this.on("remove-star", function (eventItem) {
-        this.starredEvents.removeEvent(eventItem);
-      }, this);
-
-      this.on("remove-star star-item", function () {
-        this.latestEventsView.render();
-        this.starredEventsView.render();
-      }, this);
+    regions: {
+      eventsContainer: "[data-js-identifier=events-container]"
     },
 
-    render: function() {
-      var viewVars = { name: this.model.get("name"), cid: this.model.cid };
+    ui: {
+      latestEventsLink: "[data-js-identifier=latest-events-tab-link]",
+      starredEventsLink: "[data-js-identifier=starred-events-tab-link]"
+    },
 
-      this.$el.html(this.template(viewVars));
+    events: {
+      "click @ui.latestEventsLink": "renderLatestEvents",
+      "click @ui.starredEventsLink": "renderStarredEvents"
+    },
 
-      this.$el.easytabs({ animationSpeed: "fast" });
+    initialize: function () {
+      this.eventItems =
+        new Events([], {
+          accountId: this.model.get("id"),
+          authToken: UserToken.current()
+        });
 
-      this.latestEventsView.
-        setElement(this.$el.find("div.latest-notifications"));
+      // this.eventItems.fetchAuthorized();
+      this.eventItems.fetch({ remote: false });
 
-      this.starredEventsView.
-        setElement(this.$el.find(".starred-items-list"));
+      this.starredEvents =
+        new StarredEvents([], { accountId: this.model.get("id") });
 
-      this.latestEvents.fetchCached();
-      this.starredEvents.fetch();
+      this.starredEvents.fetch({ remote: false });
 
-      return this;
+      this.listenTo(Backbone, this.model.get("id") + "-star-event", this.starEvent);
+      this.listenTo(Backbone, this.model.get("id") + "-unstar-event", this.unstarEvent);
+    },
+
+    onRender: function () {
+      this.renderLatestEvents();
+    },
+
+    renderLatestEvents: function() {
+      var view = new EventsView({ collection: this.eventItems });
+
+      this.eventsContainer.show(view);
+    },
+
+    renderStarredEvents: function() {
+      var view = new EventsView({ collection: this.starredEvents });
+
+      this.eventsContainer.show(view);
+    },
+
+    starEvent: function(eventItem) {
+      eventItem.star();
+      this.starredEvents.star(eventItem);
+    },
+
+    unstarEvent: function(eventItem) {
+      eventItem.unstar();
+      this.starredEvents.unstar(eventItem);
     }
   });
 });

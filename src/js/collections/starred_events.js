@@ -1,37 +1,38 @@
 define([
-  "collections/events",
-  "services/events_cache",
-  "backbone"
-], function(
-  Events,
-  EventsCache
-) {
-  return Events.extend({
+  "backbone",
+  "models/event",
+  "backbone.dualstorage"
+], function(Backbone, Event) {
+  return Backbone.Collection.extend({
+    model: Event,
 
-    addEvent: function (eventItem) {
-      this.add(eventItem);
-      EventsCache.update("starred-items-" + this.accountId, this.toJSON());
+    local: true,
+
+    url: "local-collection",
+
+    storeName: "starredItemsStorage",
+
+    // initialize: function () {
+    //   console.log("DSA");
+    //   this.fetch({ remote: false });
+    // },
+
+    star: function (eventItem) {
+      this.create(eventItem.toJSON());
     },
 
-    removeEvent: function (eventItem) {
-      this.remove(eventItem);
-      EventsCache.update("starred-items-" + this.accountId, this.toJSON(), true);
+    unstar: function (eventItem) {
+      var starredItem = this.findWhere({ id: eventItem.get("id") });
+
+      if (!starredItem) {
+        return;
+      }
+
+      this.remove(starredItem);
     },
-
-    fetch: function () {
-      var promise = $.Deferred();
-      var storedItems = EventsCache.get("starred-items-" + this.accountId);
-      var that = this;
-
-      this.set(storedItems);
-
-      promise.resolve(this);
-
-      promise.done(function () {
-        that.trigger("sync");
-      });
-
-      return promise;
+    
+    comparator: function(model) {
+      return -Date.parse(model.get("created_at"));
     }
   });
 });

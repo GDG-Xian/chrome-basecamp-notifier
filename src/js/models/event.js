@@ -1,42 +1,32 @@
 define([
-  "services/unread_events_cache",
-  "services/events_cache",
   "services/text",
   "models/user_token",
   "models/comment",
-  "backbone"
+  "backbone",
+  "backbone.computed-properties",
+  "backbone.offline-attributes"
 ], function(
-  UnreadEventsCache,
-  EventsCache,
   Text,
   UserToken,
   Comment
 ) {
+  return Backbone.Model.extend({
+    offlineAttributes: ["viewed", "starred"],
 
-  var Event = Backbone.Model.extend({
-    initialize: function() {
-      this.set("icon", this.icon());
-      this.set("viewed", this.viewed());
-      this.set("type", this.type());
+    isCommentEvent: Backbone.Computed("type", function () {
+      return this.get("type") == "comment";
+    }),
+
+    offlineAttributeStorageIdentifier: function() {
+      return "eventOfflineAttributesStorage" + this.get("id");
     },
 
-    viewed: function() {
-      return !UnreadEventsCache.isUnread(this);
+    star: function() {
+      this.set({ starred: true });
     },
 
-    getId: function () {
-      return this.get("id");
-    },
-
-    isStarred: function () {
-      var StarredEvents = EventsCache.get("starred-items-" + this.getAccountId());
-      return _.any(StarredEvents, function(eventItem) {
-        return eventItem.id == this.getId();
-      }, this);
-    },
-
-    isCommentEvent: function () {
-      return this.type() == "comment";
+    unstar: function() {
+      this.set({ starred: false });
     },
 
     /*
@@ -52,63 +42,44 @@ define([
       }
     },
 
-    comment: function () {
-      if (_.isUndefined(this.commentInstance)) {
-        this.commentInstance = new Comment(
-          { id: this.getCommentId(), html_url: this.get("html_url") },
-          { userToken: UserToken.current(), url: this.get("url") }
-        );
-      }
-
-      return this.commentInstance;
-    },
-
-    getAccountId: function (attribute) {
+    accountId: Backbone.Computed("url", function() {
       var accountIdExp = /[0-9]{7}/;
       return accountIdExp.exec(this.get("url"))[0];
-    },
+    }),
 
-    creatorAvatarUrl: function () {
-      return this.get("creator").avatar_url;
-    },
+    treatedSummary: Backbone.Computed("summary", function() {
+      var treatedSummary = Text.stripTags(this.get("summary"));
 
-    creatorFirstName: function () {
-      if (_.isUndefined(this.firstNameCache)) {
-        this.firstNameCache = this.creatorName().split(" ")[0];
-      }
-      return this.firstNameCache;
-    },
+      treatedSummary = Text.unescapeHTML(treatedSummary);
 
-    creatorName: function () {
-      return this.get("creator").name;
-    },
+      var creatorNameLength = this.get("creator").name.length,
+          summaryLength = 105 - creatorNameLength;
 
-    bucketName: function () {
-      return this.get("bucket").name;
-    },
+      return Text.truncate(treatedSummary, summaryLength, "...");
+    }),
 
-    bucketId: function () {
-      return this.get("bucket").id;
-    },
+    comment: Backbone.Computed("html_url", "url", function () {
+      return new Comment({
+        id: this.getCommentId(),
+        html_url: this.get("html_url")
+      }, {
+        userToken: UserToken.current(),
+        url: this.get("url")
+      });
+    }),
 
-    link: function () {
-      return this.get("html_url");
-    },
-
-    summary: function () {
-      return this.get("summary");
-    },
-
-    icon: function() {
-      var type = this.type();
-      var typeInfos = Event.types[type];
+    icon: Backbone.Computed("type", function() {
+      var type = this.get("type"),
+          typeInfos = this.constructor.types[type];
 
       if (type && typeInfos) {
         return typeInfos.icon;
       }
-    },
+    }),
 
-    type: function() {
+    // Basecamp doesn't send any event type flag so I need grab it from the
+    // "action" attribute
+    type: Backbone.Computed("action", function() {
       if (Text.contains(this.get("action"), "re-assigned a to-do")) {
         return "re_assign_todo";
       } else if (Text.contains(this.get("action"), "commented on")) {
@@ -156,7 +127,7 @@ define([
       } else if (Text.contains(this.get("action"), "removed") && Text.contains(this.get("action"), "from the project")) {
         return "removed_permission_from_project";
       }
-    }
+    })
   }, {
     types: {
       re_assign_todo: { label: "Re-Assigned a to-do", icon: "icon-retweet" },
@@ -184,6 +155,4 @@ define([
       deleted_file: { label: "Delete a file", icon: "icon-remove" }
     }
   });
-
-  return Event;
 });

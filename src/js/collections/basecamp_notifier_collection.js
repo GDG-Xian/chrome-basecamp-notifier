@@ -22,7 +22,7 @@ define(["backbone"], function() {
       this.lastModificationFlagHeader = xhr.getResponseHeader('Last-Modified');
     },
 
-    fetch: function(options) {
+    fetchAuthorized: function(options) {
       options = options || {};
 
       _.defaults(options, {

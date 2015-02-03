@@ -1,0 +1,27 @@
+<div class="first-line">
+  <img src="{{creator.avatar_url}}" class="creator-avatar" alt="">
+
+  <div class="icons-container">
+    <i class="icon {{icon}}"></i>
+
+    <i class="icon {{#if starred}}icon-star{{else}}icon-star-empty{{/if}}"
+       data-js-identifier="star-button"
+       class="star-item"></i>
+  </div>
+
+  <div class="summary">
+    {{creator.name}}
+    {{treatedSummary}}
+  </div>
+
+  <div class="meta-infos">
+    <p>
+      <i class="icon-time"></i>
+    </p>
+
+    <p>
+      <i class="icon-suitcase"></i>
+      {{bucket.name}}
+    </p>
+  </div>
+</div>
